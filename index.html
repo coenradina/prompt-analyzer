@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="id" data-lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prompt Analyzer — Evaluasi Kualitas Prompt AI</title>
+    <meta name="description" content="Analisis kualitas prompt AI kamu dalam 3 langkah mudah menggunakan framework ROSES, PESAN, atau SIP." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+
+    <!-- ======================================================
+         HEADER
+    ====================================================== -->
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+          </div>
+          <span class="brand-name">Prompt Analyzer</span>
+        </div>
+        <div class="header-right">
+          <div class="quota-badge" id="quota-badge" title="Sisa kuota hari ini">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+            </svg>
+            <span id="quota-label">3 analisis tersisa</span>
+          </div>
+          <button id="lang-toggle" class="hdr-btn" title="Switch language">
+            <span id="lang-label">EN</span>
+          </button>
+          <button id="theme-toggle" class="hdr-btn icon-only" title="Ganti tema">
+            <svg id="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg id="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+              <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ======================================================
+         PROGRESS BAR
+    ====================================================== -->
+    <div class="progress-bar-wrap" id="progress-wrap">
+      <div class="progress-inner">
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="step-dots">
+          <div class="step-dot active" id="dot-1" data-step="1">
+            <span class="dot-num">1</span>
+            <span class="dot-label" id="dot-label-1">Pilih Formula</span>
+          </div>
+          <div class="step-dot" id="dot-2" data-step="2">
+            <span class="dot-num">2</span>
+            <span class="dot-label" id="dot-label-2">Tulis Prompt</span>
+          </div>
+          <div class="step-dot" id="dot-3" data-step="3">
+            <span class="dot-num">3</span>
+            <span class="dot-label" id="dot-label-3">Lihat Hasil</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         MAIN — STEP CONTAINER
+    ====================================================== -->
+    <main class="wizard-main">
+
+      <!-- STEP 1: PICK FORMULA -->
+      <section class="step-view active" id="step-1" aria-label="Pilih formula">
+        <div class="step-content">
+          <div class="step-header">
+            <h1 class="step-title" id="s1-title">Pilih Formula Prompt</h1>
+            <p class="step-subtitle" id="s1-subtitle">Setiap formula cocok untuk situasi yang berbeda. Pilih yang sesuai kebutuhanmu.</p>
+          </div>
+          <div class="formula-cards" id="formula-cards">
+
+            <!-- ROSES -->
+            <button class="formula-card" id="card-ROSES" data-fw="ROSES" aria-label="Pilih formula ROSES">
+              <div class="card-acronym">ROSES</div>
+              <div class="card-body">
+                <div class="card-name">ROSES</div>
+                <span class="card-tagline" id="roses-tagline">Cocok untuk task kompleks &amp; terstruktur</span>
+                <p class="card-desc" id="roses-desc">Framework paling lengkap. Bagus untuk task yang butuh banyak konteks dan langkah yang jelas.</p>
+                <div class="card-letters">
+                  <span class="card-letter"><strong>R</strong> Role</span>
+                  <span class="card-letter"><strong>O</strong> Objective</span>
+                  <span class="card-letter"><strong>S</strong> Scenario</span>
+                  <span class="card-letter"><strong>E</strong> Expectations</span>
+                  <span class="card-letter"><strong>S</strong> Steps</span>
+                </div>
+              </div>
+              <div class="card-arrow" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </div>
+            </button>
+
+            <!-- PESAN -->
+            <button class="formula-card" id="card-PESAN" data-fw="PESAN" aria-label="Pilih formula PESAN">
+              <div class="card-acronym">PESAN</div>
+              <div class="card-body">
+                <div class="card-name">PESAN</div>
+                <span class="card-tagline" id="pesan-tagline">Untuk konten, copywriting &amp; komunikasi</span>
+                <p class="card-desc" id="pesan-desc">Dirancang untuk task kreatif dan komunikasi. Fokus pada tone, nuansa, dan batasan yang jelas.</p>
+                <div class="card-letters">
+                  <span class="card-letter"><strong>P</strong> Peran</span>
+                  <span class="card-letter"><strong>E</strong> Esensi</span>
+                  <span class="card-letter"><strong>S</strong> Situasi</span>
+                  <span class="card-letter"><strong>A</strong> Aturan</span>
+                  <span class="card-letter"><strong>N</strong> Nuansa</span>
+                </div>
+              </div>
+              <div class="card-arrow" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </div>
+            </button>
+
+            <!-- SIP -->
+            <button class="formula-card" id="card-SIP" data-fw="SIP" aria-label="Pilih formula SIP">
+              <div class="card-acronym">SIP</div>
+              <div class="card-body">
+                <div class="card-name">SIP</div>
+                <span class="card-tagline" id="sip-tagline">Paling sederhana — cocok untuk pemula</span>
+                <p class="card-desc" id="sip-desc">Hanya 3 komponen. Mulai dari sini kalau kamu baru belajar prompting.</p>
+                <div class="card-letters">
+                  <span class="card-letter"><strong>S</strong> Siapa saya</span>
+                  <span class="card-letter"><strong>I</strong> Ingin apa</span>
+                  <span class="card-letter"><strong>P</strong> Penyajiannya</span>
+                </div>
+              </div>
+              <div class="card-arrow" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </div>
+            </button>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 2: WRITE PROMPT -->
+      <section class="step-view" id="step-2" aria-label="Tulis prompt">
+        <div class="step-content step-content--wide">
+          <button class="back-btn" id="back-1" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            <span id="back1-label">Kembali</span>
+          </button>
+
+          <div class="step2-layout">
+            <!-- Guide panel -->
+            <div class="guide-panel">
+              <div class="guide-header">
+                <span class="fw-badge" id="guide-fw-badge">ROSES</span>
+                <h2 class="guide-title" id="guide-title">Panduan menulis</h2>
+              </div>
+              <div class="guide-components" id="guide-components">
+                <!-- Rendered by JS -->
+              </div>
+              <div class="guide-example-block">
+                <p class="guide-example-label" id="example-label">Contoh prompt lengkap:</p>
+                <div class="guide-example-text" id="guide-example"></div>
+              </div>
+            </div>
+
+            <!-- Input panel -->
+            <div class="input-panel">
+              <label class="input-label" for="prompt-input" id="input-label">Prompt kamu</label>
+              <div class="textarea-wrap">
+                <textarea
+                  id="prompt-input"
+                  class="prompt-textarea"
+                  placeholder="Tulis atau paste prompt-mu di sini..."
+                  spellcheck="false"
+                ></textarea>
+              </div>
+              <div class="input-footer">
+                <span class="char-count" id="char-count">0 karakter</span>
+                <button class="analyze-btn" id="analyze-btn" disabled>
+                  <span id="analyze-label">Analisis Sekarang</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 3: RESULTS -->
+      <section class="step-view" id="step-3" aria-label="Hasil analisis">
+        <div class="step-content">
+
+          <!-- Nav row -->
+          <div class="result-nav">
+            <button class="back-btn" id="back-2" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              <span id="back2-label">Edit Prompt</span>
+            </button>
+            <button class="retry-btn" id="retry-btn" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              <span id="retry-label">Analisis Ulang</span>
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div class="loading-state" id="loading-state" style="display:none">
+            <div class="loading-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <p class="loading-text" id="loading-text">Menganalisis prompt dengan AI...</p>
+          </div>
+
+          <!-- Error -->
+          <div class="error-state" id="error-state" style="display:none">
+            <div class="error-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <p class="error-title" id="error-title">Ups, ada masalah</p>
+            <p class="error-msg" id="error-msg"></p>
+            <button class="analyze-btn" id="error-retry-btn" type="button" style="width:auto;margin-top:8px">
+              <span id="error-retry-label">Coba Lagi</span>
+            </button>
+          </div>
+
+          <!-- Results content -->
+          <div id="results-content" style="display:none">
+
+            <!-- Score hero -->
+            <div class="score-hero">
+              <div class="score-num-wrap">
+                <span class="score-num" id="score-num">0</span>
+                <span class="score-denom">/10</span>
+              </div>
+              <div class="score-label-wrap">
+                <span class="score-fw-badge" id="score-fw-badge">ROSES</span>
+                <span class="score-verdict" id="score-verdict">Perlu Perbaikan</span>
+                <p class="score-desc" id="score-desc"></p>
+              </div>
+            </div>
+
+            <!-- Fallback notice -->
+            <div class="fallback-notice" id="fallback-notice" style="display:none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+              <span id="fallback-msg">Mode fallback aktif — API tidak tersedia</span>
+            </div>
+
+            <!-- Component breakdown -->
+            <div class="breakdown-section">
+              <h3 class="section-label" id="label-breakdown">Detail per Komponen</h3>
+              <div class="breakdown-list" id="breakdown-list">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+
+            <!-- Overall feedback -->
+            <div class="overall-section">
+              <h3 class="section-label" id="label-overall">Feedback Keseluruhan</h3>
+              <div class="overall-card" id="overall-card"></div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
