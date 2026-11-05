@@ -1,9 +1,15 @@
 // ============================================================
-// RATE LIMITER  — only active when VITE_ENABLE_RATE_LIMIT=true
+// QUOTA DISPLAY
+// The real limit (3 per day per visitor) is enforced by the server proxy.
+// This local copy only drives the badge in the header.
 // ============================================================
-const RATE_LIMIT_ENABLED = import.meta.env.VITE_ENABLE_RATE_LIMIT === 'true';
 const RATE_KEY = 'pa_usage';
 const DAILY_LIMIT = 3;
+
+// Public URL of the proxy, which holds the Groq key server-side.
+const ANALYZE_URL =
+  import.meta.env.VITE_ANALYZE_URL ||
+  'https://us-central1-aastr-portfolio.cloudfunctions.net/analyzePrompt';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
@@ -22,15 +28,14 @@ export function getRateState() {
 }
 
 export function getRemainingRequests() {
-  if (!RATE_LIMIT_ENABLED) return null; // null = unlimited
   return Math.max(0, DAILY_LIMIT - getRateState().count);
 }
 
-function incrementRate() {
-  const state = getRateState();
-  const next = { date: todayStr(), count: state.count + 1 };
-  localStorage.setItem(RATE_KEY, JSON.stringify(next));
-  return next;
+function storeRemaining(remaining) {
+  const count = DAILY_LIMIT - Math.max(0, Math.min(DAILY_LIMIT, Number(remaining) || 0));
+  try {
+    localStorage.setItem(RATE_KEY, JSON.stringify({ date: todayStr(), count }));
+  } catch {}
 }
 
 // ============================================================
@@ -40,91 +45,53 @@ function toIndonesianError(err) {
   const msg = err?.message || '';
   const status = err?.status || 0;
 
-  // Rate limit exceeded (our own)
   if (err?.type === 'rate_limit_local') {
     return `Kamu sudah mencapai batas 3 analisis hari ini. Coba lagi besok ya! 🙏`;
   }
-
-  // Groq API errors
-  if (status === 401 || msg.includes('401') || msg.includes('invalid_api_key')) {
-    return `API key tidak valid atau sudah kadaluarsa. Pastikan kamu sudah mengisi API key yang benar di file .env, lalu restart aplikasinya.`;
+  if (err?.type === 'busy') {
+    return `Kuota analisis AI hari ini sudah habis untuk semua pengguna. Coba lagi besok ya.`;
   }
-  if (status === 429 || msg.includes('429') || msg.includes('rate_limit')) {
-    return `Terlalu banyak permintaan ke AI dalam waktu singkat. Tunggu sekitar 1 menit, lalu coba lagi.`;
+  if (status === 403) {
+    return `Permintaan ditolak oleh server. Buka aplikasi ini dari aastr.id/prompt-analyzer.`;
   }
-  if (status === 503 || msg.includes('503') || msg.includes('overloaded')) {
-    return `Server AI sedang sangat sibuk saat ini. Coba lagi dalam beberapa menit ya.`;
+  if (status === 503 || status === 502 || status >= 500) {
+    return `Server AI sedang sibuk atau bermasalah. Ini bukan salah kamu — coba lagi dalam beberapa menit.`;
   }
-  if (status >= 500) {
-    return `Ada masalah di server AI (error ${status}). Ini bukan salah kamu — coba lagi dalam beberapa menit.`;
+  if (status === 422 || status === 400 || status === 413) {
+    return `Prompt tidak bisa diproses. Pastikan panjangnya maksimal 4.000 karakter.`;
   }
   if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch')) {
-    return `Tidak bisa terhubung ke internet. Periksa koneksi kamu, lalu coba lagi.`;
+    return `Tidak bisa terhubung ke server. Periksa koneksi kamu, lalu coba lagi.`;
   }
   if (msg.includes('JSON') || msg.includes('parse')) {
     return `AI memberikan jawaban yang tidak bisa dibaca. Coba analisis ulang — biasanya berhasil di percobaan kedua.`;
   }
-  if (!import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GROQ_API_KEY === 'your_groq_api_key_here') {
-    return `API key belum diatur. Isi nilai VITE_GROQ_API_KEY di file .env, lalu restart dev server.`;
-  }
-
   return `Terjadi kesalahan yang tidak terduga. Coba lagi, atau refresh halaman jika masalah berlanjut.`;
 }
 
 // ============================================================
-// GROQ API CLIENT
+// ANALYZE (via server proxy)
 // ============================================================
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.1-8b-instant';
 
 /**
- * Calls Groq to analyze a prompt against a framework.
+ * Asks the proxy to analyze a prompt against a framework.
  * Returns { total_score, component_scores, overall_feedback }
  * Throws an error with an Indonesian `.userMessage` if anything goes wrong.
  */
 export async function analyzeWithGroq(userPrompt, framework, components, lang) {
-  // 1. Check local rate limit (only in prod)
-  if (RATE_LIMIT_ENABLED) {
-    const rateState = getRateState();
-    if (rateState.count >= DAILY_LIMIT) {
-      const err = new Error('Local rate limit exceeded');
-      err.type = 'rate_limit_local';
-      err.userMessage = toIndonesianError(err);
-      throw err;
-    }
-  }
-
-  // 2. Check key
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-  if (!apiKey || apiKey === 'your_groq_api_key_here') {
-    const err = new Error('Missing API key');
+  if (getRemainingRequests() <= 0) {
+    const err = new Error('Local rate limit exceeded');
+    err.type = 'rate_limit_local';
     err.userMessage = toIndonesianError(err);
     throw err;
   }
 
-  // 3. Build prompt
-  const systemPrompt = buildSystemPrompt(framework, components, lang);
-  const maxScore = components.length * 2;
-
-  // 4. Call API
   let res;
   try {
-    res = await fetch(GROQ_URL, {
+    res = await fetch(ANALYZE_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.3,
-        max_tokens: 1024,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Prompt yang perlu dianalisis:\n\n${userPrompt}` },
-        ],
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: userPrompt, framework, lang }),
     });
   } catch (fetchErr) {
     const err = new Error(fetchErr.message);
@@ -132,42 +99,30 @@ export async function analyzeWithGroq(userPrompt, framework, components, lang) {
     throw err;
   }
 
+  let body = null;
+  try { body = await res.json(); } catch {}
+
   if (!res.ok) {
-    let body = {};
-    try { body = await res.json(); } catch {}
-    const err = new Error(body?.error?.message || `HTTP ${res.status}`);
+    const err = new Error(body?.message || `HTTP ${res.status}`);
     err.status = res.status;
+    if (res.status === 429 && body?.code === 'daily_limit') {
+      storeRemaining(0);
+      err.type = 'rate_limit_local';
+    } else if (res.status === 429 && body?.code === 'busy') {
+      err.type = 'busy';
+    }
     err.userMessage = toIndonesianError(err);
     throw err;
   }
 
-  // 5. Parse response
-  let data;
-  try {
-    data = await res.json();
-  } catch (parseErr) {
+  if (!body?.result) {
     const err = new Error('JSON parse error');
-    err.userMessage = toIndonesianError(parseErr);
+    err.userMessage = toIndonesianError(err);
     throw err;
   }
 
-  let parsed;
-  try {
-    const content = data.choices[0].message.content;
-    parsed = JSON.parse(content);
-  } catch (parseErr) {
-    const err = new Error('JSON parse error');
-    err.userMessage = toIndonesianError(parseErr);
-    throw err;
-  }
-
-  // 6. Validate + normalise structure
-  const result = normaliseResult(parsed, components, maxScore);
-
-  // 7. Increment rate counter only on success (only in prod)
-  if (RATE_LIMIT_ENABLED) incrementRate();
-
-  return result;
+  storeRemaining(body.remaining);
+  return normaliseResult(body.result, components, components.length * 2);
 }
 
 function normaliseResult(raw, components, maxScore) {
@@ -192,50 +147,4 @@ function normaliseResult(raw, components, maxScore) {
     component_scores: componentScores,
     overall_feedback: raw.overall_feedback || '',
   };
-}
-
-// ============================================================
-// SYSTEM PROMPT BUILDER
-// ============================================================
-function buildSystemPrompt(frameworkName, components, lang) {
-  const langInstruction = lang === 'id'
-    ? 'Seluruh teks feedback dan overall_feedback HARUS dalam Bahasa Indonesia yang jelas dan natural.'
-    : 'All feedback text and overall_feedback MUST be in clear, natural English.';
-
-  const componentList = components
-    .map(c => `  - "${c}"`)
-    .join('\n');
-
-  return `Kamu adalah seorang ahli evaluasi prompt AI yang memberikan feedback jujur, spesifik, dan actionable.
-
-Framework yang digunakan: ${frameworkName}
-Komponen yang harus dievaluasi:
-${componentList}
-
-${langInstruction}
-
-Tugasmu:
-Evaluasi prompt yang diberikan user terhadap setiap komponen framework ${frameworkName}. Berikan skor dan feedback yang konkret.
-
-Aturan scoring per komponen (skala 0–2):
-- 0: Komponen ini sama sekali tidak ada dalam prompt, atau sangat samar sehingga tidak berguna
-- 1: Ada sinyal komponen ini, tapi tidak lengkap, terlalu umum, atau bisa diperjelas
-- 2: Komponen ini hadir dengan jelas, spesifik, dan memberikan konteks yang cukup
-
-Aturan feedback per komponen:
-- Jelaskan APA yang sudah ada (atau tidak ada) di prompt untuk komponen ini
-- Berikan SATU saran konkret yang spesifik (bukan generik) untuk memperbaikinya jika skornya < 2
-- Jangan ulangi isi prompt secara kata per kata — parafrase dan analisis
-- Panjang: 2–3 kalimat per komponen
-
-Kembalikan HANYA JSON valid dengan format persis ini — tidak ada teks di luar JSON:
-{
-  "component_scores": {
-    "<nama_komponen_persis_seperti_daftar_di_atas>": {
-      "score": <0, 1, atau 2>,
-      "feedback": "<2-3 kalimat feedback>"
-    }
-  },
-  "overall_feedback": "<3-4 kalimat ringkasan kualitas prompt secara keseluruhan dan 2 prioritas perbaikan utama>"
-}`;
 }

@@ -29,10 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # No secrets here: anything passed to a Vite build ends up in the public
+      # bundle. The Groq key lives in the analyzePrompt Cloud Function.
       - name: Build
-        env:
-          VITE_GROQ_API_KEY: ${{ secrets.VITE_GROQ_API_KEY }}
-          VITE_ENABLE_RATE_LIMIT: "true"
         run: npm run build
 
       - name: Upload Pages artifact

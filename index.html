@@ -2,6 +2,8 @@
 <html lang="id" data-lang="id">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://us-central1-aastr-portfolio.cloudfunctions.net; object-src 'none'; base-uri 'self'; form-action 'none'" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prompt Analyzer — Evaluasi Kualitas Prompt AI</title>
     <meta name="description" content="Analisis kualitas prompt AI kamu dalam 3 langkah mudah menggunakan framework ROSES, PESAN, atau SIP." />
@@ -181,6 +183,7 @@
                   id="prompt-input"
                   class="prompt-textarea"
                   placeholder="Tulis atau paste prompt-mu di sini..."
+                  maxlength="4000"
                   spellcheck="false"
                 ></textarea>
               </div>
@@ -191,6 +194,7 @@
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </button>
               </div>
+              <p class="privacy-note" id="privacy-note">Prompt dikirim ke Groq untuk dianalisis dan tidak disimpan oleh situs ini. Jangan tempel data pribadi atau rahasia.</p>
             </div>
           </div>
         </div>
