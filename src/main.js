@@ -26,6 +26,7 @@ const T = {
     guideTitle: 'Panduan menulis',
     exampleLabel: 'Contoh prompt lengkap:',
     placeholder: 'Tulis atau paste prompt-mu di sini...',
+    privacyNote: 'Prompt dikirim ke Groq untuk dianalisis dan tidak disimpan oleh situs ini. Jangan tempel data pribadi atau rahasia.',
     charLabel: 'karakter',
     analyzeBtn: 'Analisis Sekarang',
     loading: 'Menganalisis prompt dengan AI...',
@@ -53,6 +54,7 @@ const T = {
     guideTitle: 'Writing guide',
     exampleLabel: 'Full prompt example:',
     placeholder: 'Write or paste your prompt here...',
+    privacyNote: 'Your prompt is sent to Groq for analysis and is not stored by this site. Do not paste personal or confidential data.',
     charLabel: 'characters',
     analyzeBtn: 'Analyze Now',
     loading: 'Analyzing your prompt with AI...',
@@ -180,6 +182,7 @@ function renderStep2Guide() {
   setText('example-label', t().exampleLabel);
   setText('input-label', t().inputLabel);
   $('prompt-input').placeholder = t().placeholder;
+  setText('privacy-note', t().privacyNote);
 
   // Components guide
   const compContainer = $('guide-components');
@@ -340,7 +343,7 @@ function renderResults(result, isFallback) {
       card.className = 'breakdown-card';
       card.innerHTML = `
         <div class="bk-header">
-          <span class="bk-name">${comp}</span>
+          <span class="bk-name"></span>
           <div class="bk-score-chip">
             <div class="score-pips">
               <div class="pip ${s >= 1 ? `filled ${pipColor}` : ''}"></div>
@@ -349,8 +352,11 @@ function renderResults(result, isFallback) {
             <span class="bk-score-text">${s}/2 — ${t().scoreChips[s]}</span>
           </div>
         </div>
-        <p class="bk-feedback">${data.feedback || ''}</p>
+        <p class="bk-feedback"></p>
       `;
+      // Model output is untrusted text: set it with textContent, never innerHTML.
+      card.querySelector('.bk-name').textContent = comp;
+      card.querySelector('.bk-feedback').textContent = data.feedback || '';
       list.appendChild(card);
     }
   }
